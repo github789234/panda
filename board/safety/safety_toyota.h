@@ -31,8 +31,8 @@ const CanMsg TOYOTA_TX_MSGS[] = {{0x180, 0, 5}, {0x181, 0, 6}, {0x182, 0, 7}, {0
                                  {0x200, 0, 6}};  // interceptor
 
 AddrCheckStruct toyota_addr_checks[] = {
-  {.msg = {{ 0xb0, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
-  {.msg = {{ 0xb2, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
+  {.msg = {{ 0xB0, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
+  {.msg = {{ 0xB2, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
   {.msg = {{0x260, 0, 8, .check_checksum = true, .expected_timestep = 20000U}, { 0 }, { 0 }}},
   {.msg = {{0x689, 0, 8, .check_checksum = false, .expected_timestep = 1000000U}, { 0 }, { 0 }}},
   {.msg = {{0x49B, 0, 8, .check_checksum = false, .expected_timestep = 500000U}, { 0 }, { 0 }}},																																			 
