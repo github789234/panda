@@ -112,6 +112,13 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
       pcm_cruise_check(cruise_engaged);
     };
 
+    //Lexus_LS Gas Pedal
+    if (!gas_interceptor_detected){
+      if(addr == 0x49B){
+        gas_pressed = GET_BYTE(to_push, 5) != 0U;
+      }
+    }
+
     // if (addr == 0xaa) {
     //   // check that all wheel speeds are at zero value with offset
     //   bool standstill = (GET_BYTES(to_push, 0, 4) == 0x6F1A6F1AU) && (GET_BYTES(to_push, 4, 4) == 0x6F1A6F1AU);
