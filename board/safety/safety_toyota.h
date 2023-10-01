@@ -36,8 +36,8 @@ AddrCheckStruct toyota_addr_checks[] = {
   {.msg = {{0x260, 0, 8, .check_checksum = true, .expected_timestep = 20000U}, { 0 }, { 0 }}},
   {.msg = {{0x689, 1, 8, .check_checksum = false, .expected_timestep = 1000000U}, { 0 }, { 0 }}},
   {.msg = {{0x49B, 1, 8, .check_checksum = false, .expected_timestep = 500000U}, { 0 }, { 0 }}},																																			 
-  {.msg = {{0x224, 1, 8, .check_checksum = false, .expected_timestep = 25000U},
-           {0x226, 1, 8, .check_checksum = false, .expected_timestep = 25000U}, { 0 }}},
+  {.msg = {{0x224, 0, 8, .check_checksum = false, .expected_timestep = 25000U},
+           {0x226, 0, 8, .check_checksum = false, .expected_timestep = 25000U}, { 0 }}},
 };
 #define TOYOTA_ADDR_CHECKS_LEN (sizeof(toyota_addr_checks) / sizeof(toyota_addr_checks[0]))
 addr_checks toyota_rx_checks = {toyota_addr_checks, TOYOTA_ADDR_CHECKS_LEN};
