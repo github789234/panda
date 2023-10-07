@@ -20,6 +20,9 @@ const LongitudinalLimits TOYOTA_LONG_LIMITS = {
   .max_accel = 2000,   // 2.0 m/s2
   .min_accel = -3500,  // -3.5 m/s2
 };
+#define LEXUS_LS_MAIN_BUS 0
+#define LEXUS_LS_ALT_BUS  1
+#define LEXUS_LS_CAM_BUS  2
 
 // panda interceptor threshold needs to be equivalent to openpilot threshold to avoid controls mismatches
 // If thresholds are mismatched then it is possible for panda to see the gas fall and rise while openpilot is in the pre-enabled state
@@ -75,7 +78,34 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
   bool valid = addr_safety_check(to_push, &toyota_rx_checks,
                                  toyota_get_checksum, toyota_compute_checksum, NULL, NULL);
 
-  if (valid && (GET_BUS(to_push) == 0U)) {
+  if (valid && (GET_BUS(to_push) == 1U)) 
+  {
+    int addr = GET_ADDR(to_push);
+
+    if (addr == 0x689) {
+      // 17th bit is CRUISE_ACTIVE
+      bool cruise_engaged = GET_BIT(to_push, 17U) != 0U;
+      pcm_cruise_check(cruise_engaged);
+    };
+
+    //Lexus_LS Gas Pedal
+    if (!gas_interceptor_detected){
+      if(addr == 0x49B){
+        gas_pressed = GET_BYTE(to_push, 5) != 0U;
+      }
+    }
+
+    //Lexus_LS Wheel Speeds check
+    if (addr == 0xB0 || addr == 0xB2) {
+        bool standstill = (GET_BYTE(to_push, 0) == 0x00) && (GET_BYTE(to_push, 1) == 0x00) && (GET_BYTE(to_push, 2) == 0x00) && (GET_BYTE(to_push, 3) == 0x00);
+        vehicle_moving = !standstill;
+    }
+
+    return valid;
+  }
+
+  if (valid && (GET_BUS(to_push) == 0U)) 
+  {
     int addr = GET_ADDR(to_push);
 
     // get eps motor torque (0.66 factor in dbc)
@@ -106,18 +136,18 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
     //     gas_pressed = GET_BIT(to_push, 4U) == 0U;
     //   }
     // }
-    if (addr == 0x689) {
+    //if (addr == 0x689) {
       // 17th bit is CRUISE_ACTIVE
-      bool cruise_engaged = GET_BIT(to_push, 17U) != 0U;
-      pcm_cruise_check(cruise_engaged);
-    };
+    //   bool cruise_engaged = GET_BIT(to_push, 17U) != 0U;
+    //   pcm_cruise_check(cruise_engaged);
+    // };
 
-    //Lexus_LS Gas Pedal
-    if (!gas_interceptor_detected){
-      if(addr == 0x49B){
-        gas_pressed = GET_BYTE(to_push, 5) != 0U;
-      }
-    }
+    // //Lexus_LS Gas Pedal
+    // if (!gas_interceptor_detected){
+    //   if(addr == 0x49B){
+    //     gas_pressed = GET_BYTE(to_push, 5) != 0U;
+    //   }
+    // }
 
     // if (addr == 0xaa) {
     //   // check that all wheel speeds are at zero value with offset
@@ -126,10 +156,10 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
     // }
 
     //Lexus_LS Wheel Speeds check
-    if (addr == 0xB0 || addr == 0xB2) {
-        bool standstill = (GET_BYTE(to_push, 0) == 0x00) && (GET_BYTE(to_push, 1) == 0x00) && (GET_BYTE(to_push, 2) == 0x00) && (GET_BYTE(to_push, 3) == 0x00);
-        vehicle_moving = !standstill;
-    }
+    // if (addr == 0xB0 || addr == 0xB2) {
+    //     bool standstill = (GET_BYTE(to_push, 0) == 0x00) && (GET_BYTE(to_push, 1) == 0x00) && (GET_BYTE(to_push, 2) == 0x00) && (GET_BYTE(to_push, 3) == 0x00);
+    //     vehicle_moving = !standstill;
+    // }
 
     // most cars have brake_pressed on 0x226, corolla and rav4 on 0x224
     if (((addr == 0x224) && toyota_alt_brake) || ((addr == 0x226) && !toyota_alt_brake)) {
