@@ -34,8 +34,6 @@ const CanMsg TOYOTA_TX_MSGS[] = {{0x180, 0, 5}, {0x181, 0, 6}, {0x182, 0, 7}, {0
                                  {0x200, 0, 6}};  // interceptor
 
 AddrCheckStruct toyota_addr_checks[] = {
-  {.msg = {{ 0xB0, 1, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
-  {.msg = {{ 0xB2, 1, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
   {.msg = {{0x260, 0, 8, .check_checksum = true, .expected_timestep = 20000U}, { 0 }, { 0 }}},
   {.msg = {{0x689, 1, 8, .check_checksum = false, .expected_timestep = 1000000U}, { 0 }, { 0 }}},
   {.msg = {{0x49B, 1, 8, .check_checksum = false, .expected_timestep = 500000U}, { 0 }, { 0 }}},																																			 
@@ -44,6 +42,16 @@ AddrCheckStruct toyota_addr_checks[] = {
 };
 #define TOYOTA_ADDR_CHECKS_LEN (sizeof(toyota_addr_checks) / sizeof(toyota_addr_checks[0]))
 addr_checks toyota_rx_checks = {toyota_addr_checks, TOYOTA_ADDR_CHECKS_LEN};
+
+AddrCheckStruct toyota_drv_bus_addr_checks[] = {
+  {.msg = {{ 0xB0, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
+  {.msg = {{ 0xB2, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
+};
+#define TOYOTA_DRV_BUS_ADDR_CHECKS_LEN (sizeof(toyota_drv_bus_addr_checks) / sizeof(toyota_drv_bus_addr_checks[0]))
+addr_checks toyota_drv_bus_rx_checks = {toyota_drv_bus_addr_checks, TOYOTA_DRV_BUS_ADDR_CHECKS_LEN};
+
+bool toyota_steering = false;
+bool second_panda = false;  // Are we the second panda intercepting the driving bus?
 
 // safety param flags
 // first byte is for eps factor, second is for flags
@@ -75,13 +83,13 @@ static uint32_t toyota_get_checksum(CANPacket_t *to_push) {
 
 static int toyota_rx_hook(CANPacket_t *to_push) {
 
-  bool valid = addr_safety_check(to_push, &toyota_rx_checks,
+  bool valid = addr_safety_check(to_push, second_panda ? (&toyota_drv_bus_rx_checks) : &toyota_rx_checks,
                                  toyota_get_checksum, toyota_compute_checksum, NULL, NULL);
 
   if (valid && (GET_BUS(to_push) == 1U)) 
   {
     int addr = GET_ADDR(to_push);
-
+    if(!toyota_driving)
     if (addr == 0x689) {
       // 17th bit is CRUISE_ACTIVE
       bool cruise_engaged = GET_BIT(to_push, 17U) != 0U;
