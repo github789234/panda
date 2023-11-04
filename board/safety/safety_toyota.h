@@ -43,12 +43,16 @@ AddrCheckStruct toyota_addr_checks[] = {
 #define TOYOTA_ADDR_CHECKS_LEN (sizeof(toyota_addr_checks) / sizeof(toyota_addr_checks[0]))
 addr_checks toyota_rx_checks = {toyota_addr_checks, TOYOTA_ADDR_CHECKS_LEN};
 
+
+
 AddrCheckStruct toyota_drv_bus_addr_checks[] = {
   {.msg = {{ 0xB0, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
   {.msg = {{ 0xB2, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
 };
 #define TOYOTA_DRV_BUS_ADDR_CHECKS_LEN (sizeof(toyota_drv_bus_addr_checks) / sizeof(toyota_drv_bus_addr_checks[0]))
 addr_checks toyota_drv_bus_rx_checks = {toyota_drv_bus_addr_checks, TOYOTA_DRV_BUS_ADDR_CHECKS_LEN};
+
+
 
 bool toyota_steering = false;
 bool second_panda = false;  // Are we the second panda intercepting the driving bus?
@@ -89,24 +93,23 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
   if (valid && (GET_BUS(to_push) == 1U)) 
   {
     int addr = GET_ADDR(to_push);
-    if(!toyota_driving)
-    if (addr == 0x689) {
-      // 17th bit is CRUISE_ACTIVE
-      bool cruise_engaged = GET_BIT(to_push, 17U) != 0U;
-      pcm_cruise_check(cruise_engaged);
-    };
-
-    //Lexus_LS Gas Pedal
-    if (!gas_interceptor_detected){
-      if(addr == 0x49B){
-        gas_pressed = GET_BYTE(to_push, 5) != 0U;
-      }
+    if(!second_panda)
+    {
+      if (addr == 0x689) {
+        // 17th bit is CRUISE_ACTIVE
+        bool cruise_engaged = GET_BIT(to_push, 17U) != 0U;
+        pcm_cruise_check(cruise_engaged);
+      };
     }
 
-    //Lexus_LS Wheel Speeds check
-    if (addr == 0xB0 || addr == 0xB2) {
-        bool standstill = (GET_BYTE(to_push, 0) == 0x00) && (GET_BYTE(to_push, 1) == 0x00) && (GET_BYTE(to_push, 2) == 0x00) && (GET_BYTE(to_push, 3) == 0x00);
-        vehicle_moving = !standstill;
+    if(!second_panda)
+    {
+      //Lexus_LS Gas Pedal
+      if (!gas_interceptor_detected){
+        if(addr == 0x49B){
+          gas_pressed = GET_BYTE(to_push, 5) != 0U;
+        }
+      }
     }
 
     return valid;
@@ -116,20 +119,30 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
   {
     int addr = GET_ADDR(to_push);
 
+    if(!second_panda){
     // get eps motor torque (0.66 factor in dbc)
-    if (addr == 0x260) {
-      int torque_meas_new = (GET_BYTE(to_push, 5) << 8) | GET_BYTE(to_push, 6);
-      torque_meas_new = to_signed(torque_meas_new, 16);
+      if (addr == 0x260) {
+        int torque_meas_new = (GET_BYTE(to_push, 5) << 8) | GET_BYTE(to_push, 6);
+        torque_meas_new = to_signed(torque_meas_new, 16);
 
-      // scale by dbc_factor
-      torque_meas_new = (torque_meas_new) * 1.8f;
+        // scale by dbc_factor
+        torque_meas_new = (torque_meas_new) * 1.8f;
 
-      // update array of sample
-      update_sample(&torque_meas, torque_meas_new);
+        // update array of sample
+        update_sample(&torque_meas, torque_meas_new);
 
-      // increase torque_meas by 1 to be conservative on rounding
-      torque_meas.min--;
-      torque_meas.max++;
+        // increase torque_meas by 1 to be conservative on rounding
+        torque_meas.min--;
+        torque_meas.max++;
+      }
+    }
+
+    if(second_panda){
+      //Lexus_LS Wheel Speeds check
+      if (addr == 0xB0 || addr == 0xB2) {
+          bool standstill = (GET_BYTE(to_push, 0) == 0x00) && (GET_BYTE(to_push, 1) == 0x00) && (GET_BYTE(to_push, 2) == 0x00) && (GET_BYTE(to_push, 3) == 0x00);
+          vehicle_moving = !standstill;
+      }
     }
 
     // enter controls on rising edge of ACC, exit controls on ACC off
@@ -202,7 +215,7 @@ static int toyota_tx_hook(CANPacket_t *to_send) {
   }
 
   // Check if msg is sent on BUS 0
-  if (bus == 0) {
+  if (bus == 0 && !second_panda) {
 
     // GAS PEDAL: safety check
     // if (addr == 0x200) {
@@ -284,12 +297,15 @@ static const addr_checks* toyota_init(uint16_t param) {
   toyota_stock_longitudinal = GET_FLAG(param, TOYOTA_PARAM_STOCK_LONGITUDINAL);
   toyota_dbc_eps_torque_factor = param & TOYOTA_EPS_FACTOR;
 
+  second_panda = GET_FLAG(param, SECOND_PANDA);
+
 #ifdef ALLOW_DEBUG
   toyota_lta = GET_FLAG(param, TOYOTA_PARAM_LTA);
 #else
   toyota_lta = false;
 #endif
-  return &toyota_rx_checks;
+  return second_panda ? (&toyota_drv_bus_rx_checks) : (&toyota_rx_checks);
+  //return &toyota_rx_checks;
 }
 
 static int toyota_fwd_hook(int bus_num, int addr) {
