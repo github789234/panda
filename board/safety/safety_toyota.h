@@ -104,6 +104,13 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
   {
     int addr = GET_ADDR(to_push);
 
+    //The second panda need to see the CRUISE_ACTIVE status see rx on CAN0 as well
+    if (addr == 0x689) {
+      // 17th bit is CRUISE_ACTIVE
+      bool cruise_engaged = GET_BIT(to_push, 17U) != 0U;
+      pcm_cruise_check(cruise_engaged);
+    };
+
     // get eps motor torque (0.66 factor in dbc)
     if (addr == 0x260) {
       int torque_meas_new = (GET_BYTE(to_push, 5) << 8) | GET_BYTE(to_push, 6);
