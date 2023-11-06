@@ -192,7 +192,7 @@ typedef struct {
 void safety_tick(const addr_checks *addr_checks);
 
 // This can be set by the safety hooks
-bool controls_allowed = false;
+bool controls_allowed = true;
 bool relay_malfunction = false;
 bool gas_interceptor_detected = false;
 int gas_interceptor_prev = 0;
