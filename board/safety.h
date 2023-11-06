@@ -673,7 +673,7 @@ bool steer_angle_cmd_checks(int desired_angle, bool steer_control_enabled, const
 void pcm_cruise_check(bool cruise_engaged) {
   // Enter controls on rising edge of stock ACC, exit controls if stock ACC disengages
   if (!cruise_engaged) {
-    controls_allowed = false;
+    controls_allowed = true;
   }
   if (cruise_engaged && !cruise_engaged_prev) {
     controls_allowed = true;
