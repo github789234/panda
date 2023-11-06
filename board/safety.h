@@ -175,6 +175,7 @@ void safety_tick(const addr_checks *rx_checks) {
       rx_checks->check[i].lagging = lagging;
       if (lagging) {
         controls_allowed = false;
+        
       }
 
       if (lagging || !is_msg_valid(rx_checks->check, i)) {
