@@ -84,7 +84,7 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
 
     if (addr == 0x689) {
       // 17th bit is CRUISE_ACTIVE
-      bool cruise_engaged = GET_BIT(to_push, 17U) != 0U;
+      bool cruise_engaged = 0x01; //GET_BIT(to_push, 17U) != 0U;
       pcm_cruise_check(cruise_engaged);
     };
 
