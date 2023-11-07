@@ -84,11 +84,9 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
 
     if (addr == 0x689) {
       // 17th bit is CRUISE_ACTIVE
-      bool cruise_engaged = 0x01; //GET_BIT(to_push, 17U) != 0U;
+      bool cruise_engaged = GET_BIT(to_push, 17U) != 0U;
       pcm_cruise_check(cruise_engaged);
     };
-
-
 
     return valid;
   }
@@ -122,7 +120,7 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
     //Lexus_LS Gas Pedal
     if (!gas_interceptor_detected){
       if(addr == 0x2C1){
-        gas_pressed = 0; //( (GET_BYTE(to_push, 6) << 8) | (GET_BYTE(to_push, 7)) ) > 148;
+        gas_pressed = ( (GET_BYTE(to_push, 6) << 8) | (GET_BYTE(to_push, 7)) ) > 148;
       }
     }
 
@@ -145,12 +143,6 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
     //   pcm_cruise_check(cruise_engaged);
     // };
 
-    // //Lexus_LS Gas Pedal
-    // if (!gas_interceptor_detected){
-    //   if(addr == 0x49B){
-    //     gas_pressed = GET_BYTE(to_push, 5) != 0U;
-    //   }
-    // }
 
     // if (addr == 0xaa) {
     //   // check that all wheel speeds are at zero value with offset
@@ -158,16 +150,10 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
     //   vehicle_moving = !standstill;
     // }
 
-    //Lexus_LS Wheel Speeds check
-    // if (addr == 0xB0 || addr == 0xB2) {
-    //     bool standstill = (GET_BYTE(to_push, 0) == 0x00) && (GET_BYTE(to_push, 1) == 0x00) && (GET_BYTE(to_push, 2) == 0x00) && (GET_BYTE(to_push, 3) == 0x00);
-    //     vehicle_moving = !standstill;
-    // }
-
     // most cars have brake_pressed on 0x226, corolla and rav4 on 0x224
     if (((addr == 0x224) && toyota_alt_brake) || ((addr == 0x226) && !toyota_alt_brake)) {
       //uint8_t bit = (addr == 0x224) ? 5U : 37U;
-      brake_pressed = 0; //GET_BIT(to_push, bit) != 0U;
+      brake_pressed = GET_BIT(to_push, bit) != 0U;
     }
 
 
@@ -181,8 +167,9 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
       gas_interceptor_prev = gas_interceptor;
     }
 
-    generic_rx_checks((addr == 0x180));
+    generic_rx_checks((addr == 0x180) || (addr == 0x280) );
   }
+  
   return valid;
 }
 
