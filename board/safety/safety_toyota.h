@@ -38,7 +38,7 @@ AddrCheckStruct toyota_addr_checks[] = {
   {.msg = {{ 0xB2, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
   {.msg = {{0x260, 0, 8, .check_checksum = true, .expected_timestep = 20000U}, { 0 }, { 0 }}},
   {.msg = {{0x689, 1, 8, .check_checksum = false, .expected_timestep = 1000000U}, { 0 }, { 0 }}},
-  {.msg = {{0x49B, 1, 8, .check_checksum = false, .expected_timestep = 500000U}, { 0 }, { 0 }}},																																			 
+  {.msg = {{0x2C1, 0, 8, .check_checksum = false, .expected_timestep = 32000U}, { 0 }, { 0 }}},																																			 
   {.msg = {{0x224, 0, 8, .check_checksum = false, .expected_timestep = 25000U},
            {0x226, 0, 8, .check_checksum = false, .expected_timestep = 25000U}, { 0 }}},
 };
@@ -88,13 +88,6 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
       pcm_cruise_check(cruise_engaged);
     };
 
-    //Lexus_LS Gas Pedal
-    if (!gas_interceptor_detected){
-      if(addr == 0x49B){
-        gas_pressed = GET_BYTE(to_push, 5) != 0U;
-      }
-    }
-
 
 
     return valid;
@@ -126,6 +119,12 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
       torque_meas.max++;
     }
 
+    //Lexus_LS Gas Pedal
+    if (!gas_interceptor_detected){
+      if(addr == 0x2C1){
+        gas_pressed = (GET_BYTE(to_push, 6) << 8) | GET_BYTE(to_push, 7); > 148U;
+      }
+    }
 
 
     // enter controls on rising edge of ACC, exit controls on ACC off
