@@ -31,11 +31,11 @@ const int TOYOTA_GAS_INTERCEPTOR_THRSLD = 805;
 #define TOYOTA_GET_INTERCEPTOR(msg) (((GET_BYTE((msg), 0) << 8) + GET_BYTE((msg), 1) + (GET_BYTE((msg), 2) << 8) + GET_BYTE((msg), 3)) / 2U) // avg between 2 tracks
 
 const CanMsg TOYOTA_TX_MSGS[] = {{0x180, 0, 5}, {0x181, 0, 6}, {0x182, 0, 7}, {0x185, 0, 8}, {0x281, 0, 6}, {0x282, 0, 3}, {0x4CB, 0, 8},  // DSU bus 0
-                                 {0x200, 0, 6}};  // interceptor
+                                 {0x200, 0, 6} };  // interceptor
 
 AddrCheckStruct toyota_addr_checks[] = {
-  {.msg = {{ 0xB0, 1, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
-  {.msg = {{ 0xB2, 1, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
+  {.msg = {{ 0xB0, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
+  {.msg = {{ 0xB2, 0, 8, .check_checksum = false, .expected_timestep = 12000U}, { 0 }, { 0 }}},
   {.msg = {{0x260, 0, 8, .check_checksum = true, .expected_timestep = 20000U}, { 0 }, { 0 }}},
   {.msg = {{0x689, 1, 8, .check_checksum = false, .expected_timestep = 1000000U}, { 0 }, { 0 }}},
   {.msg = {{0x49B, 1, 8, .check_checksum = false, .expected_timestep = 500000U}, { 0 }, { 0 }}},																																			 
@@ -95,11 +95,7 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
       }
     }
 
-    //Lexus_LS Wheel Speeds check
-    if (addr == 0xB0 || addr == 0xB2) {
-        bool standstill = (GET_BYTE(to_push, 0) == 0x00) && (GET_BYTE(to_push, 1) == 0x00) && (GET_BYTE(to_push, 2) == 0x00) && (GET_BYTE(to_push, 3) == 0x00);
-        vehicle_moving = !standstill;
-    }
+
 
     return valid;
   }
@@ -107,6 +103,12 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
   if (valid && (GET_BUS(to_push) == 0U)) 
   {
     int addr = GET_ADDR(to_push);
+
+    //Lexus_LS Wheel Speeds check
+    if (addr == 0xB0 || addr == 0xB2) {
+        bool standstill = (GET_BYTE(to_push, 0) == 0x00) && (GET_BYTE(to_push, 1) == 0x00) && (GET_BYTE(to_push, 2) == 0x00) && (GET_BYTE(to_push, 3) == 0x00);
+        vehicle_moving = !standstill;
+    }
 
     // get eps motor torque (0.66 factor in dbc)
     if (addr == 0x260) {
@@ -205,8 +207,8 @@ static int toyota_tx_hook(CANPacket_t *to_send) {
     //   }
     // }
 
-    // ACCEL: safety check on byte 1-2
-    // if (addr == 0x343) {
+    //ACCEL: safety check on byte 1-2
+    // if (addr == 0x280) {
     //   int desired_accel = (GET_BYTE(to_send, 0) << 8) | GET_BYTE(to_send, 1);
     //   desired_accel = to_signed(desired_accel, 16);
 
