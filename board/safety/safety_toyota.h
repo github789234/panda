@@ -91,7 +91,7 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
     //Lexus_LS Gas Pedal
     if (!gas_interceptor_detected){
       if(addr == 0x2C1){
-        gas_pressed = GET_BYTE(to_push, 5) != 0U;
+        gas_pressed = ( (GET_BYTE(to_push, 6) << 8) | (GET_BYTE(to_push, 7)) ) > 1000; //pedal is really sensitive
       }
     }
 
